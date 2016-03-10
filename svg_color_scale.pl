@@ -1,5 +1,66 @@
 #!/usr/bin/env perl
+=head1 NAME
 
+svg_color_scale.pl - Colorize elements in SVG file by user-supplied values and color scale
+
+=head1 SYNOPSIS
+
+perl svg_color_scale.pl --svg <svg file>
+                        --tab <color table>
+                        --out <output svg file>
+                        --scale <output scalebar svg file>
+
+perl svg_color_scale.pl --help
+
+=head1 DESCRIPTION
+
+This tool was designed to simplify re-drawing diagrams, e.g. metabolic
+pathways, which are annotated with colored symbols corresponding to some
+numerical parameter, such as gene expression level.
+
+=head1 ARGUMENTS
+
+=over 8
+
+=item --svg <file>
+
+SVG file to be modified
+
+=item --tab <file>
+
+Comma- or tab-separated table. Column 1 - SVG object IDs, column 2 - numerical
+parameter to be converted to color value. The range of the parameter is
+automatically used to define color scale over that range, and objects with the
+corresponding IDs have their fill colors changed according to that scale.
+
+=item --out <file>
+
+File name for SVG output file with changed colors
+
+=item --scale <file>
+
+File name for SVG output file containing a scale bar.
+
+=back
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright 2016, Brandon Seah (kbseah@mpi-bremen.de)
+
+LICENSE
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+=cut
 # Brandon Seah (kbseah@mpi-bremen.de
 # Version 001 -- 2016-01-19
 
@@ -9,6 +70,7 @@ use SVG;
 use SVG::Parser;
 use List::Util qw(min max);
 use Getopt::Long;
+use Pod::Usage;
 
 #my $parser = new SVG::Parser(-debug => 1); # Debugging version
 my $parser = new SVG::Parser();
@@ -20,12 +82,20 @@ my $scalebar; # File for scale bar output
 my $userMin;
 my $userMax; # user-specified min and max values for scale
 
+if (!@ARGV) {
+    pod2usage (-message=>"No arguments given", -exitstatus=>2);
+}
+
+
 GetOptions ("svg=s"=>\$thefile,
             "out=s"=>\$outfile,
             "tab=s"=>\$valsTab,
             "scale=s"=>\$scalebar,
             "min=i"=>\$userMin,
-            "max=i"=>\$userMax) or die ("$!");
+            "max=i"=>\$userMax,
+            "help|h"=> sub { pod2usage(-exitstatus=>2, -verbose=>2); },
+            "man|m"=> sub { pod2usage (-exitstatus=>0, -verbose=>2); }
+            ) or pod2usage (-message=>"Invalid arguments", -exitstatus=>2) ;
 
 my %vals_hash; # Hash to store values from table
 my @minmax; # Array to store min and max values for values
@@ -34,9 +104,9 @@ my @minmax; # Array to store min and max values for values
 
 # Catch exceptions
 if ($thefile eq "") {
-    usage();
+    pod2usage (-message=>"Invalid arguments", -exitstatus=>2);
 } elsif ($valsTab eq "") {
-    usage();
+    pod2usage (-message=>"Invalid arguments", -exitstatus=>2) ;
 }
 
 my $svg = $parser->parse_file($thefile); # Parse SVG file
@@ -83,25 +153,6 @@ if (! $scalebar eq "") { # If scale bar desired, write to file
 
 ## SUBROUTINES ############################################
 
-sub usage {
-    print STDERR "***********************************************************************\n";
-    print STDERR "Colorize elements in SVG file by user-supplied values and color scale\n\n";
-    print STDERR "Usage: \n";
-    print STDERR "       perl $0 --svg input.svg \\ \n ";
-    print STDERR "                             --tab values.csv \\ \n";
-    print STDERR "                             --out output.svg \\ \n";
-    print STDERR "                             --scale scalebar_output.svg\n\n";
-    print STDERR "User-supplied input table (comma- or tab-separated) contains SVG object IDs\n";
-    print STDERR "in first column, and numerical parameters in second column. The numerical \n";
-    print STDERR "parameters are used to make a color scale over their range, and the objects\n";
-    print STDERR "with the corresponding IDs have their fill colors changed according to that \n";
-    print STDERR "color scale. \n\n";
-    print STDERR "This tool was designed to simplify re-drawing diagrams, e.g. metabolic \n";
-    print STDERR "pathways, which are annotated with colored symbols corresponding to some \n";
-    print STDERR "numerical parameter, such as gene expression level.\n\n";
-    print STDERR "***********************************************************************\n";
-    exit;
-}
 
 sub makeScaleBar {
     my ($min, $max, $type) = @_; 

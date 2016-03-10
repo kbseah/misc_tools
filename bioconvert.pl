@@ -1,11 +1,74 @@
 #!/usr/bin/perl
 
+=head1 NAME
+
+bioconvert.pl - Convert biosequence formats with BioPerl
+
+=head1 SYNOPSIS
+
+perl bioconvert.pl -i <input> -o <output> -fi <input format> -fo <output format> [-ali]
+
+perl bioconvert.pl --help
+
+=head1 DESCRIPTION
+
+Use BioPerl to convert between different file formats.
+
+=head1 ARGUMENTS
+
+=over 8
+
+=item -i <file>
+
+Input filename
+
+=item -o <file>
+
+Name for output file
+
+=item -fi <string>
+
+=item -fo <string>
+
+Specify input and output formats. Choose from: fasta, phylip, nexus.
+(Default: both "fasta")
+
+=item -ali
+
+Flag if input is an alignment
+
+=item -revcomp
+
+Flag to report reverse complement sequence (nucleotide only)
+
+=back
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright 2016, Brandon Seah (kbseah@mpi-bremen.de)
+
+LICENSE
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+=cut
+
 use strict;
 use warnings;
 use Bio::AlignIO;
 use Bio::SeqIO;
 use Bio::DB::Fasta;
 use Getopt::Long;
+use Pod::Usage;
 
 my ($input_file, $output_file);
 my $format_in = "fasta";
@@ -13,8 +76,8 @@ my $format_out = "fasta";
 my $is_alignment = 0;
 my $revcomp_flag = 0;
 
-if (!defined @ARGV) {
-    usage();
+if (! @ARGV) {
+    pod2usage(-message=>"Invalid input arguments", -exitstatus=>2);
     exit;
 }
 
@@ -23,7 +86,10 @@ GetOptions ('input|i=s'=>\$input_file,
             'fi=s'=>\$format_in,
             'fo=s'=>\$format_out,
             'ali'=>\$is_alignment,
-            'revcomp' =>\$revcomp_flag) or die ("$!\n");
+            'revcomp' =>\$revcomp_flag,
+            'help|h' => sub { pod2usage(-exitstatus=>2, -verbose=>2); },
+            'man|m' => sub { pod2usage(-exitstatus=>0, -verbose=>2); }
+            ) or pod2usage(-exitstatus=>2, -verbose=>2);
 
 
 
@@ -55,10 +121,4 @@ sub convert_sequence {
         }
         
     }
-}
-
-sub usage {
-    print STDERR "\nConvert bio sequence formats with BioPerl\n\n";
-    print STDERR "\tUsage: perl bioconvert.pl -i input_file -o output_file -fi <input_format> -fo <output_format> (-ali)\n\n";
-    print STDERR "\t-i\tInput filename\n\t-o\tOutput filename\n\t-fi\tInput format, e.g. fasta, phylip, nexus\n\t\-fo\tOutput format\n\t-ali\tFlag if sequences are aligned\n\t-revcomp\tFlag if you want reverse complement\n\n";
 }
