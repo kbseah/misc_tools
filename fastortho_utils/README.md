@@ -55,5 +55,5 @@ or with the `ggplot2` and `reshape2` packages:
  d.melt <- melt(d,id.vars="num_genomes") # Reformat data to "long" fromat
  ggplot(d.melt,aes(num_genomes,value,col=variable)) + 
   geom_jitter(height=0,width=0.1,size=0.1) + # jitter in horizontal axis for legibility
-  stat_summary(fun.y="mean",color=factor(variable),geom="line")
+  stat_summary(fun.y="mean",geom="line")
 ```
