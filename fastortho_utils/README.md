@@ -45,3 +45,15 @@ Results can be imported into R and plotted, e.g.:
  points(tapply(X=d$singleton,INDEX=d$num_genomes,FUN=mean),type="l",col="red")
  legend(x="topleft",col=c("black","red","blue"),legend=c("pan","singleton","core"),lty=1)
 ```
+
+or with the `ggplot2` and `reshape2` packages:
+
+```R
+ d <- read.table("result.out",header=T)
+ library(ggplot2)
+ library(reshape2)
+ d.melt <- melt(d,id.vars="num_genomes") # Reformat data to "long" fromat
+ ggplot(d.melt,aes(num_genomes,value,col=variable)) + 
+  geom_jitter(height=0,width=0.1,size=0.1) + # jitter in horizontal axis for legibility
+  stat_summary(fun.y="mean",color=factor(variable),geom="line")
+```
