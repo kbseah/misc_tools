@@ -7,21 +7,23 @@
 use strict;
 use warnings;
 
+# Read command line arguments
 my ($fastortho_results, $options_file);
-
-if (!defined @ARGV) {
+if (!@ARGV) {
     print "\n\t";
     print "Usage: perl resampling_FastOrtho.pl fastortho.end fastortho.opt > resampling_table\n\n";
     print "\tCaution: Performs sampling WITH replacement\n\n";
     exit;
+} else {
+    ($fastortho_results, $options_file) = @ARGV;
 }
-else { ($fastortho_results, $options_file) = @ARGV; }
-
+# Variables
 my %proteins_clusters_hash;  # Hash of all protein IDs (keys) and the clusters they belong to (value)
 my %proteins_genomes_hash;  # Hash of all protein IDs (keys) and the genomes they belong to (value)
 my %genome_files;   # List of single_genome_fasta files (keys) and paths (values)
 my $number_of_genomes=0;    # Stores count of total number of genomes
 my %clusters_genomes_hash;  # Hash-of-hash with counts of number of cluster members (value) per cluster (key1) per genome (key2)
+my $reps = 200;  # Number of pseudoreplicates
 
 # Read list of genome files (fasta) from options file
 open(OPTIONS, "<", $options_file) or die ("$!\n");
@@ -41,9 +43,9 @@ while (<OPTIONS>) {
 }
 close(OPTIONS);
 
-# Read list of proteins and associate them to genome names
+# Read list of proteins from Fasta files and associate them to genome names
 foreach my $thekey (keys %genome_files) {
-    open(GENOME, "<", "$genome_files{$thekey}") or die ("$!\n");
+    open(GENOME, "<", "$genome_files{$thekey}") or die ("Cannot open Fasta file $genome_files{$thekey}: $!");
     while (<GENOME>) {
         if ($_ =~ /^>(\S+)/) {
             $proteins_genomes_hash{$1} = $thekey;
@@ -117,18 +119,16 @@ foreach my $thecluster (sort keys %clusters_genomes_hash) {
     }
     elsif (scalar (keys %{$clusters_genomes_hash{$thecluster}}) == 1) { $num_singletons_real++; }
 }
+print STDOUT "# Observed counts\n";
+print STDOUT "# num_genomes\tpan\tcore\tsingleton\n";
+print STDOUT "# ";
+print STDOUT join "\t", ($num_genomes_real, $num_clusters_real, $num_core_real, $num_singletons_real);
+print STDOUT "\n\n\n";
 
-print "# Observed counts\n";
-print "# num_genomes\tpan\tcore\tsingleton\n";
-print "# ";
-print join "\t", ($num_genomes_real, $num_clusters_real, $num_core_real, $num_singletons_real);
-print "\n\n\n";
-
-## Perform resampling
-
-my $reps = 200;  # Number of pseudoreplicates
-my @headerline = ("num_genomes","pan","core","singleton");  # Header line for resampling output
-print join ("\t", @headerline). "\n";
+## Perform resampling for accumulation curves
+# Header line
+my @headerline = ("num_genomes","pan","core","singleton"); 
+print STDOUT join ("\t", @headerline). "\n";
 
 # NB: SAMPLING WITH REPLACEMENT!
 for (my $gen=1; $gen <= $number_of_genomes; $gen++) {    # For number of pseudoreplicates between 1 and $number_of_genomes 
@@ -164,8 +164,8 @@ for (my $gen=1; $gen <= $number_of_genomes; $gen++) {    # For number of pseudor
                 $num_singletons++;
             }
         }
-        print $gen."\t". $num_clusters."\t".$num_core."\t".$num_singletons;
-        print "\n";
+        print STDOUT $gen."\t". $num_clusters."\t".$num_core."\t".$num_singletons;
+        print STDOUT "\n";
     }
     #print "\n";
 }
