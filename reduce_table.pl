@@ -25,6 +25,10 @@ my ($infile, $listfile, $outfile);
 my %list;   # Hash to store list of row or col names
 my @outarr; # Array to hold output lines
 
+if (!@ARGV) {
+    pod2usage (-verbose => 1);
+}
+
 GetOptions ("delim|d=s" => \$delim,     # Delimiter for table
             "by=s" => \$by,             # Subset by row or column? Default: "col"
             "table|t=s" => \$infile,    # Input table file (else STDIN)
@@ -32,10 +36,6 @@ GetOptions ("delim|d=s" => \$delim,     # Delimiter for table
             "out|o=s" => \$outfile,     # Output table file (else STDOUT)
             "help|h" => sub {pod2usage(-verbose => 2)},         # Help message
             ) or pod2usage (-verbose => 1);
-
-if (!@ARGV) {
-    pod2usage (-verbose => 1);
-}
 
 if (!defined $listfile) {
     die ("You did not specify a list of rows or columns to be subsetted.\n");
