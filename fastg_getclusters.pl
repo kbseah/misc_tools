@@ -187,11 +187,16 @@ foreach my $clust (sort {$clust_stats_href->{$b}{'length'} <=> $clust_stats_href
         print $fh_summary $bin."\t".$clust_stats_href->{$clust}{'length'}."\t".$clust_stats_href->{$clust}{'nodes'}."\n";
         open (my $fh_fasta, ">", "$out.$bin.fasta") if $dofasta; # Fasta output of cluster if option called
         foreach my $node (@{$clust2node_href->{$clust}}) {
-            print $fh_node2clust $node."\t".$bin."\n";
+            print $fh_node2clust $bin."\t".$node."\n";
             if ($dofasta) {
                 # Print fasta output if requested 
                 print $fh_fasta ">".$node."\n";
-                my ($shortid) = $node =~ m/NODE_(\d+)_/;
+                my $shortid;
+                if ($assembler eq 'spades') {
+                    ($shortid) = $node =~ m/NODE_(\d+)_/;
+                } else {
+                    ($shortid) = $node =~ m/k\d+_(\d+)/;
+                }
                 print $fh_fasta $node_seq_hash{$shortid}{'seq'}."\n";
             }
         }
