@@ -2,7 +2,7 @@
 
 =head1 NAME
 
-bioconvert.pl - Convert biosequence formats with BioPerl
+aa_composition_from_fasta -- Tabulate AA composition from a Fasta file
 
 =head1 SYNOPSIS
 
