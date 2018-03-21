@@ -1,3 +1,7 @@
 private/
 private/drawing.svg
 private/p3hpb_expr.csv
+.gitignore
+img_parse/gbk2pathologic.pl
+img_parse/imgKEGGparse.pl
+img_parse/troubleshoot_gbk.pl
