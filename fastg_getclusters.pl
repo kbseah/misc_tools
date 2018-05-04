@@ -7,7 +7,7 @@ fastg_getclusters.pl - Retrieve clusters of connected contigs from Fastg file
 
 perl fastg_getclusters.pl --fastg input.fastg --fasta input.fasta --assembler megahit --out outprefix --cutoff 100000 --outfasta
 
-perl fastg_getclusters.pl --fastg input.fastg --fasta input.fasta --paths input.paths --assembler spades--out outprefix --cutoff 100000 --outfasta
+perl fastg_getclusters.pl --fastg input.fastg --fasta input.fasta --paths input.paths --assembler spades --out outprefix --cutoff 100000 --outfasta
 
 perl fastg_getclusters.pl -h
 
@@ -60,8 +60,8 @@ GetOptions ("fastg=s" => \$fastgfile,
             "out|o=s" => \$out,
             "cutoff|c=i" => \$cutoff,
             "outfasta" => \$dofasta,
-            "help|h" => sub { pod2usage(-verbose=>1) },
-            "man|h" => sub { pod2usage(-verbose=>3) },
+            "help|h" => sub { pod2usage(-verbose=>1); },
+            "man|m" => sub { pod2usage(-verbose=>3); },
             ) or pod2usage (-verbose=>1);
 
 =head1 INPUT ARGUMENTS
@@ -419,3 +419,27 @@ sub get_seq_lens {
     }
     return \%hash;
 }
+
+
+=head1 COPYRIGHT AND LICENSE
+
+Code partially adapted from fastg_paths_fishing.pl script in the gbtools package
+https://github.com/kbseah/genome-bin-tools
+
+Copyright (C) 2017- Brandon Seah (kbseah@mpi-bremen.de)
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along
+with this program; if not, write to the Free Software Foundation, Inc.,
+51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+=cut
