@@ -209,9 +209,11 @@ if ($model_choose == 1) {
     }
 }
 
-my $concat_fasta= Bio::AlignIO->new(-file=>">$wdPath/$outfix.concat.fasta",-format=>'fasta');	# define the Multifasta output file
-my $concat_phylip = Bio::AlignIO->new(-file=>">$wdPath/$outfix.concat.phy",-format=>'phylip');	# define the Phylip output file
+my $concat_fasta= Bio::AlignIO->new(-file=>">$wdPath/$outfix.concat.fasta",-format=>'fasta'); # define the Multifasta output file
+my $concat_phylip = Bio::AlignIO->new(-file=>">$wdPath/$outfix.concat.phy",-format=>'phylip'); # define the Phylip output file
 write_concat_alignments();
+
+$concat_aln->set_displayname_flat; # Remove sequence position numbers from display names
 
 $concat_fasta->write_aln($concat_aln);
 $concat_phylip->write_aln($concat_aln);
@@ -287,21 +289,23 @@ sub choose_prot_model {
         }
     }
 
-    $best_model_choice{$alignmentName} = $AA_Models[$bestI];	# Write best model chosen to the hash of best model choices
+    $best_model_choice{$alignmentName} = $AA_Models[$bestI];    # Write best model chosen to the hash of best model choices
     
     # cleanup RAxML files
     my $cleanupcmd = "rm $wdPath/RAxML\*$alignmentName\_EVAL $wdPath/RAxML\*\_$alignmentName $wdPath/\*EVAL.out $wdPath/ST_\*out";
     system ($cleanupcmd);
 }
 
-sub model_choice_wrapper {		# Wrapper routine to perform model test for each marker gene in the list
+sub model_choice_wrapper {
+    # Wrapper routine to perform model test for each marker gene in the list
     foreach my $marker (@markers) {
-	choose_prot_model($marker);
+        choose_prot_model($marker);
     }
 }
 
-sub write_concat_alignments {		# Concatenate the alignments into new alignment file
-    $concat_aln = cat($concatHash{$markers[0]});			# Can't recursively cat on empty string, so must start from first element
+sub write_concat_alignments {
+    # Concatenate the alignments into new alignment file
+    $concat_aln = cat($concatHash{$markers[0]}); # Can't recursively cat on empty string, so must start from first element
     $genePos{$markers[0]}= $concat_aln->length();
     
     # Initialize a file to contain the list of marker genes and their positions in the alignment
@@ -316,7 +320,8 @@ sub write_concat_alignments {		# Concatenate the alignments into new alignment f
         system ("cat $wdPath/$outfix.$markers[0]\.mask >> $wdPath/$outfix\.mask");
     } 
     
-    for (my $x = 1; $x <= ($concat_len - 1); $x++){			# Iterate through the hash and recursively concatenate the alignments
+    for (my $x = 1; $x <= ($concat_len - 1); $x++){
+        # Iterate through the hash and recursively concatenate the alignments
         $concat_aln = cat($concat_aln, $concatHash{$markers[$x]});
         $genePos{$markers[$x]}= $concat_aln->length();	# store the end position of this marker gene in the alignment
         # Add the marker and its positions to the partitions file for later use with phylogenetic software
