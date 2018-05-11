@@ -1,12 +1,8 @@
 #!/usr/bin/env perl
 
-use strict;
-use warnings;
-use 5.010;
-use Getopt::Long;
-use Pod::Usage;
+=head1 NAME
 
-my %hash;
+sam2fastx.pl - Convert SAM to Fasta or Fastq file
 
 =head1 SYNOPSIS
 
@@ -14,7 +10,24 @@ perl -i file.sam > out.fasta
 
 perl -i file.sam --outfmt fastq > out.fastq
 
+=head1 DESCRIPTION 
+
+Convert SAM file to Fasta or Fastq file using sequence names found in SAM file.
+Does so naively, i.e. does not distinguish paired reads if recorded under the
+same name.
+
+Circumvents the requirement of reformat.sh from BBmap suite, which requires
+header information in SAM file for conversion.
+
 =cut
+
+use strict;
+use warnings;
+use 5.010;
+use Getopt::Long;
+use Pod::Usage;
+
+my %hash;
 
 my $insam;
 my $out;
@@ -82,7 +95,7 @@ if ($outfmt eq 'fastq') {
 } else {
     write_fasta ($fhout, \%hash);
 }
-close ($fhout);
+close ($fhout) if defined $out;
 
 ## SUBS ########################################################################
 
