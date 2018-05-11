@@ -9,10 +9,12 @@ use Pod::Usage;
 
 my $samfile;
 my $out;
+my $limit = 10;
 
 pod2usage(-verbose=>1) if !@ARGV;
 GetOptions ("sam=s"=> \$samfile,
             "out|o=s" => \$out,
+            "limit=i" => \$limit,
             "help|h" => sub {pod2usage(-verbose=>1); },
             "man|m" => sub{ pod2usage(-verbose=>2); },
             ) or pod2usage(-verbose=>1);
@@ -32,7 +34,10 @@ if (defined $out) {
 }
 
 open(my $fhin, "<", $samfile) or die ("$!");
+my $counter = 0;
 while (my $samline = <$fhin>) {
+    next if $samline =~ m/^@/; # Skip headers
+    last if $counter >= $limit;
     my ($read, $bitflag, @discard) = split /\t/, $samline;
 
     # Using definitions of bitflags from SAM v1 specification 2017-05-10
@@ -75,6 +80,7 @@ while (my $samline = <$fhin>) {
         say $fhout "Bit 0x800\tsupplementary alignment";
     }
     say $fhout "";
+    $counter ++;
 }
 close($fhin);
 close ($fhout) if defined $out;
