@@ -17,7 +17,7 @@ perl -i file.sam --outfmt fastq > out.fastq
 =cut
 
 my $insam;
-my $out = *STDOUT; # Write to STDOUT by default
+my $out;
 my $outfmt = 'fasta';
 my $limit;
 
@@ -70,7 +70,13 @@ while (my $line = <$fh>) {
 }
 close($fh);
 
-open(my $fhout, ">", $out) or die ("$!");
+
+my $fhout;
+if (defined $out) {
+    open($fhout, ">", $out) or die ("$!");
+} else {
+    $fhout = *STDOUT; # Write to STDOUT by default
+}
 if ($outfmt eq 'fastq') {
     write_fastq ($fhout, \%hash);
 } else {
