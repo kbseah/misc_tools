@@ -19,7 +19,7 @@ Calculate DNA sequence entropy and redundancy for kmers each sequence in a file
 
 p_i = (occurrences kmer i) / (total kmer count)
 
-H = - \sum_i^{N} p_i \log_2 p_i
+H = - \sum_i^{N} p_i log_2 p_i
 
 for all N kmers
 
@@ -39,6 +39,7 @@ R = 1 - \log_2 (H / A)
 
 use strict;
 use warnings;
+use diagnostics;
 use 5.010;
 
 use Data::Dumper;
@@ -49,8 +50,11 @@ my %hash;
 
 my $infile;
 my $infmt = 'sam';
+my $ignoreunmapped = 1;
 my $out = 'test.entropy';
+my $calc_redundancy = 1;
 my $kmer_length = 5;
+my $reportsequence = 0;
 
 pod2usage(-verbose=>1) if !@ARGV;
 
@@ -58,6 +62,9 @@ GetOptions ("in|i=s" => \$infile,
             "fmt|f=s" => \$infmt,
             "out|o=s" => \$out,
             "k=i" => \$kmer_length,
+            "redundancy!" => \$calc_redundancy,
+            "ignoreunmapped!" => \$ignoreunmapped,
+            "reportsequence!" => \$reportsequence,
             "help|h" => sub { pod2usage(-verbose=>1); },
             "man|m" => sub { pod2usage(-verbose=>2); },
             ) or pod2usage(-verbose=>1);
@@ -86,7 +93,17 @@ Default: 'test.entropy'
 
 Length of kmer to use to calculate entropy
 
-Default: 8
+Default: 5
+
+=item --ignoreunmapped
+
+For SAM files - ignore alignment records with bit FLAG 0x4 - 'segment unmapped'. 
+This is in case there are read pairs where one segment maps but the other does
+not.
+
+Turn off with I<--noignoreunmapped>
+
+Default: Yes
 
 =item --help|-h
 
@@ -142,13 +159,18 @@ sub report_entropy {
         $k
         ) = @_;
     my @outarr;
-    push @outarr, join("\t", ("#ID", "entropy", "redundancy")); # Header line
+    my @outheader = ('#ID', 'entropy');
+    push @outheader, 'redundancy' if $calc_redundancy == 1;
+    push @outheader, 'sequence' if $reportsequence == 1;
+    push @outarr, join("\t", @outheader); # Header line
     foreach my $id (@$ids_aref) {
-        my ($entropy,$redundancy) = calc_entropy($sam_href->{$id}{'seq'},$k,1);
-        push @outarr, join "\t", ($id,
-                                  #$sam_href->{$id}{'seq'},
-                                  $entropy,
-                                  $redundancy);
+        my ($entropy,$redundancy) = calc_entropy($sam_href->{$id}{'seq'},
+                                                 $k,
+                                                 $calc_redundancy);
+        my @outfields = ($id, $entropy);
+        push @outfields, $redundancy if defined $redundancy;
+        push @outfields, $sam_href->{$id}{'seq'} if $reportsequence == 1;
+        push @outarr, join("\t", @outfields);
         #push @outarr, $redundancy;
         #push @outarr, $entropy;
     }
@@ -200,10 +222,10 @@ sub calc_entropy {
     } else {
         $max_states = length($seq)-$k + 1; # Max states is limited by length of sequence
     }
-    my $redundancy = 1 - ($H / log2($max_states));    # Redundancy
+    my $redundancy = 1 - ($H / log2($max_states)) if $report_redundancy == 1;    # Redundancy
     #say "Entropy $H - kmer length $k - alphabet size $alphabet - redundancy $redundancy";
     
-    if (defined $report_redundancy) {
+    if ($report_redundancy == 1) {
         return ($H, $redundancy);
     } else {
         return ($H);
@@ -234,8 +256,15 @@ sub hash_sam {
         next if $line =~ m/^@/; # skip header
         my ($id, @discard) = split /\s/, $line;
         my @splitsam = split /\t/, $line;
-        $href->{$id}{'seq'} = $splitsam[9] unless defined $href->{$id}{'seq'};
-        push @{$href->{$id}{'sam'}}, $line;
+        if ($splitsam[1] & 0x40) {
+            $id .= '_1';
+        } elsif ($splitsam[1] & 0x80) {
+            $id .= '_2';
+        }
+        unless ($ignoreunmapped == 1 && $splitsam[1] & 0x4) {
+            $href->{$id}{'seq'} = $splitsam[9] unless defined $href->{$id}{'seq'};
+            push @{$href->{$id}{'sam'}}, $line;
+        }
     }
     close($fh_in);
 }
