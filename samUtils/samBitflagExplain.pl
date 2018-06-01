@@ -1,5 +1,17 @@
 #!/usr/bin/env perl
 
+=head1 NAME
+
+samBitflagExplain.pl - Explain meaning of bitflags in SAM file
+
+=head1 SYNOPSIS
+
+perl samBitflagExplain.pl --sam file.sam > output
+
+perl samBitflagExplain.pl --help
+
+=cut
+
 use strict;
 use warnings;
 use 5.010;
@@ -11,13 +23,45 @@ my $samfile;
 my $out;
 my $limit = 10;
 
-pod2usage(-verbose=>1) if !@ARGV;
+pod2usage(-verbose=>0) if !@ARGV;
 GetOptions ("sam=s"=> \$samfile,
             "out|o=s" => \$out,
             "limit=i" => \$limit,
             "help|h" => sub {pod2usage(-verbose=>1); },
             "man|m" => sub{ pod2usage(-verbose=>2); },
             ) or pod2usage(-verbose=>1);
+
+=head1 ARGUMENTS
+
+=over 8
+
+=item --sam F<FILE>
+
+SAM file to parse
+
+=item --out F<FILE>
+
+Path to write output.
+
+Default: STDOUT
+
+=item --limit I<INT>
+
+Stop parsing after N entries. Specify -1 for no limit.
+
+Default: 10
+
+=item --help
+
+Help message
+
+=item --man
+
+Full manual page
+
+=back
+
+=cut
 
 if (!defined $samfile) {
     say STDERR "SAM file not specified";
@@ -37,12 +81,13 @@ open(my $fhin, "<", $samfile) or die ("$!");
 my $counter = 0;
 while (my $samline = <$fhin>) {
     next if $samline =~ m/^@/; # Skip headers
-    last if $counter >= $limit;
+    last if $limit > 0 && $counter >= $limit;
     my ($read, $bitflag, @discard) = split /\t/, $samline;
+    my $binary = sprintf "%014b", $bitflag;
 
     # Using definitions of bitflags from SAM v1 specification 2017-05-10
     # https://github.com/samtools/hts-specs/blob/master/SAMv1.pdf
-    say "Read $read \t Bitflag $bitflag";
+    say "Read $read\tBitflag $bitflag\tBinary $binary";
     if ($bitflag & 0x1) {
         say $fhout "Bit 0x1\ttemplate having multiple segments in sequencing";
     }
