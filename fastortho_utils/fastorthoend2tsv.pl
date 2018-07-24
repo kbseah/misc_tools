@@ -35,6 +35,7 @@ my $outfile = "test.out";
 my $coreflag = 0;
 my $num_genomes;
 my $format = "list";
+my $transpose = 0;
 my $singlecopyflag = 0;
 my %id_lib_ortho_hash;
 
@@ -43,6 +44,7 @@ pod2usage(-verbose=>0) if !@ARGV;
 GetOptions("fastortho_end|e=s" => \$fastortho_result,   # .end file output from FastOrtho
            "out|o=s" => \$outfile,                      # Name for output TSV file
            "format|f=s" => \$format,                    # Input format
+           "transpose" => \$transpose,
            "core" => \$coreflag,                        # Flag: Output only core genome members?
            "num_genomes=i" => \$num_genomes,            # Number of genomes (needed if core flag is on)
            "singlecopy" => \$singlecopyflag,            # Flag: Output only single copy core genome?
@@ -71,10 +73,14 @@ Output format.
 "list" will report table with three columns: product (gene name), library
 (genome name), and ortholog (FastOrtho-assigned ortholog name)
 
-"matrix" will report a table of library (genome) vs. ortholog, with the counts
-of orthologs per genome as the values of the matrix.
+"matrix" will report a table of library (genome) as rows vs. orthologs as
+columns, with the counts of orthologs per genome as the values of the matrix.
 
 Default: "list"
+
+=item --transpose
+
+Logical: Report matrix with orthologs as columns and genomes as rows
 
 =item --core
 
@@ -126,10 +132,8 @@ read_FastOrtho2();
 if ($format eq "list") {
     write_tsv_list();
 } elsif ($format eq "matrix") {
-    write_tsv_matrix();
-}
-
-
+    write_tsv_matrix($transpose);
+} 
 
 
 ## SUBROUTINES ################################################################
@@ -180,14 +184,24 @@ sub read_FastOrtho2 {
 }
 
 sub write_tsv_matrix {
+    my ($transpose) = @_;
     # Refactor the hash
     my %lib_ortho_count_hash;
     my %lib_hash;
     my %ortho_hash;
     
     foreach my $product (keys %id_lib_ortho_hash) {
-        my $currlib = $id_lib_ortho_hash{$product}{"lib"};
-        my $currortho = $id_lib_ortho_hash{$product}{"ortho"};
+        my $currlib;
+        my $currortho;
+        if ($transpose == 1) {
+            $currlib = $id_lib_ortho_hash{$product}{"ortho"};
+            $currortho = $id_lib_ortho_hash{$product}{"lib"};
+        } else {
+            $currlib = $id_lib_ortho_hash{$product}{"lib"};
+            $currortho = $id_lib_ortho_hash{$product}{"ortho"};
+        }
+        
+        
         $lib_ortho_count_hash{$currlib}{$currortho} ++;
         $lib_hash{$currlib} ++;
         $ortho_hash{$currortho} ++;
