@@ -2,24 +2,109 @@
 
 # Reformat .end file from FastOrtho into tabular TSV format
 
+=head1 NAME
+
+fastorthoend2tsv.pl - Convert FastOrtho .end output to tabular TSV format
+
+=head1 SYNOPSIS
+
+perl fastorthoend2tsv.pl -e input.end -o output.tsv -f list
+
+perl fastorthoend2tsv.pl --help
+
+perl fastorthoend2tsv.pl --man
+
+=head1 DESCRIPTION
+
+FastOrtho is a reimplementation of the OrthoMCL pipeline for finding gene
+ortholog clusters from a set of genomes, given their all-vs-all pairwise Blast
+results. The output from FastOrtho is an I<.end> file, which contains a list of
+ortholog clusters and the genes (and parent genomes) in each cluster. This
+script converts the I<.end> file into a TSV formatted table.
+
+=cut
+
 use strict;
 use warnings;
 
+use Pod::Usage;
 use Getopt::Long;
 
 my $fastortho_result;
 my $outfile = "test.out";
 my $coreflag = 0;
 my $num_genomes;
+my $format = "list";
 my $singlecopyflag = 0;
 my %id_lib_ortho_hash;
 
-GetOptions("fastortho_end|e=s"=>\$fastortho_result, # .end file output from FastOrtho
-           "out|o=s"=>\$outfile, # Name for output TSV file
-           "core"=>\$coreflag, # Flag: Output only core genome members?
-           "num_genomes=i"=>\$num_genomes, # Number of genomes (needed if core flag is on)
-           "singlecopy"=>\$singlecopyflag, # Flag: Output only single copy core genome?
-           ) or die ("Invalid options: $!");
+pod2usage(-verbose=>0) if !@ARGV;
+
+GetOptions("fastortho_end|e=s" => \$fastortho_result,   # .end file output from FastOrtho
+           "out|o=s" => \$outfile,                      # Name for output TSV file
+           "format|f=s" => \$format,                    # Input format
+           "core" => \$coreflag,                        # Flag: Output only core genome members?
+           "num_genomes=i" => \$num_genomes,            # Number of genomes (needed if core flag is on)
+           "singlecopy" => \$singlecopyflag,            # Flag: Output only single copy core genome?
+           "help|h" => sub{ pod2usage(-verbose=>1); },
+           "man|m" => sub{ pod2usage(-verbose=>2); }
+           ) or pod2usage(-verbose=>1);
+
+=head1 ARGUMENTS
+
+=over 8
+
+=item --fastortho_end | -e I<FILE>
+
+Path to input file. Must be .end output file from a FastOrtho run.
+
+=item --out | -o I<FILE>
+
+Name for output file.
+
+Default: "test.out"
+
+=item --format | -f I<STRING>
+
+Output format.
+
+"list" will report table with three columns: product (gene name), library
+(genome name), and ortholog (FastOrtho-assigned ortholog name)
+
+"matrix" will report a table of library (genome) vs. ortholog, with the counts
+of orthologs per genome as the values of the matrix.
+
+Default: "list"
+
+=item --core
+
+Logical: Output only core genome? I.e. genes that occur in all genomes.
+
+Default: No
+
+=item --num_genomes I<INTEGER>
+
+Number of genomes in the input. This is compulsory if the I<--core> option is
+supplied.
+
+=item --singlecopy
+
+Logical: Output only the single-copy core genome? I.e. genes that occur in all
+genomes once and only once.
+
+Default: No.
+
+=item --help | -h
+
+Short help message
+
+=item --man | -m
+
+Full manual page
+
+=back
+
+=cut
 
 
 # Check that option flags make sense
@@ -37,7 +122,14 @@ if ($coreflag > 0) {
 
 # Main
 read_FastOrtho2();
-write_tsv();
+
+if ($format eq "list") {
+    write_tsv_list();
+} elsif ($format eq "matrix") {
+    write_tsv_matrix();
+}
+
+
 
 
 ## SUBROUTINES ################################################################
@@ -87,7 +179,41 @@ sub read_FastOrtho2 {
     close (FASTORTHO);
 }
 
-sub write_tsv {
+sub write_tsv_matrix {
+    # Refactor the hash
+    my %lib_ortho_count_hash;
+    my %lib_hash;
+    my %ortho_hash;
+    
+    foreach my $product (keys %id_lib_ortho_hash) {
+        my $currlib = $id_lib_ortho_hash{$product}{"lib"};
+        my $currortho = $id_lib_ortho_hash{$product}{"ortho"};
+        $lib_ortho_count_hash{$currlib}{$currortho} ++;
+        $lib_hash{$currlib} ++;
+        $ortho_hash{$currortho} ++;
+    }
+    
+    # Write output
+    open(OUT, ">", $outfile) or die ("Cannot open output file: $!");
+    # header line
+    my @outhead = sort {$a cmp $b} keys %ortho_hash;
+    unshift @outhead, "library";
+    print OUT join "\t", @outhead;
+    print OUT "\n";
+    foreach my $lib (sort {$a cmp $b} keys %lib_ortho_count_hash) {
+        my @out = $lib;
+        foreach my $ortho (sort {$a cmp $b} keys %ortho_hash) {
+            # If nothing counted then print 0
+            my $count = defined $lib_ortho_count_hash{$lib}{$ortho} ? $lib_ortho_count_hash{$lib}{$ortho} : 0;
+            push @out, $count;
+        }
+        print OUT join "\t", @out;
+        print OUT "\n";
+    }
+    close(OUT);
+}
+
+sub write_tsv_list {
     open(OUT, ">", $outfile) or die ("Cannot open output file: $!"); 
     # Header line
     print OUT join "\t", qw(product library ortholog);
