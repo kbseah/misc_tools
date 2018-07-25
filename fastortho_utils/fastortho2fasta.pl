@@ -1,10 +1,29 @@
 #!/usr/bin/perl
 
-# Parse FastOrtho results file (.end) to get list of clusters found only once per genome
-# Align each cluster with Muscle, concatenate alignment (for Fasttree or other treeing program)
+=head1 NAME
+
+fastortho2fasta.pl - Convert FastOrtho orthologs to Fasta-formatted alignment
+
+=head1 SYNOPSIS
+
+perl fastortho2fasta.pl -e fastortho.end -f fastortho.faa -n [num taxa] -c concat.fasta
+
+perl fastortho2fasta.pl --help
+
+perl fastortho2fasta.pl --man
+
+=head1 DESCRIPTION
+
+Parse FastOrtho results file in I<.end> format to get the list of ortholog
+clusters found in all genomes only once (i.e. single-copy markers). Align each
+of these clusters with Muscle (should be in path), and concatenate the alignment
+for phylogenetic analysis.
+
+=cut
 
 use strict;
 use warnings;
+
 use Bio::Align::Utilities qw(:all);
 use Bio::LocatableSeq;
 use Bio::DB::Fasta;
@@ -12,27 +31,64 @@ use Bio::Seq;
 use Bio::SeqIO;
 use Bio::AlignIO;
 use Bio::SimpleAlign;
+
 use Getopt::Long;
+use Pod::Usage;
 
 my $fastortho_result;
 my $num_taxa;
 my $fasta_db;
 my $concat_file;
 
-if (! @ARGV) {
-    print STDERR "\n\tUsage: perl parse_FastOrtho_results.pl -e fastortho.end -n <num_taxa> -f fastortho.faa -c concatenated_alignment.fasta \n\n";
-    print STDERR "\t where <num_taxa> is the total number of genomes; members of the 'core genome' will be extracted and aligned\n";
-    print STDERR "\t if <num_taxa> is given as 0, then a Fasta file and alignment will be produced for each OrthoMCL cluster\n\n";
-    print STDERR "\t If specified at -c, concatenated alignment will be written, excluding clusters containing putative paralogs\n\n";
-    exit;
-}
+pod2usage(-verbose=>0) if !@ARGV;
 
 GetOptions ('fastortho_end|e=s'=>\$fastortho_result,
             'num_taxa|n=i'=>\$num_taxa,
             'fasta|f=s'=>\$fasta_db,
-            'concat|c=s'=>\$concat_file
-            ) or die ("$!\n");
+            'concat|c=s'=>\$concat_file,
+            'help|h' => sub {pod2usage(-verbose=>1);},
+            'man|m' => sub {pod2usage(-verbose=>2);}
+            ) or pod2usage(-verbose=>1);
 
+=head1 ARGUMENTS
+
+=over 8
+
+=item --fastortho_end | -e I<FILE>
+
+Output file in I<.end> format from FastOrtho.
+
+=item --num_taxa | -n I<INTEGER>
+
+Number of genomes/taxa in the ortholog clustering analysis. If the number 0 is
+specified, then a separate Fasta file and alignment will be produced for each
+ortholog cluster. Otherwise, only those taxa appearing once in all genomes will
+be extracted and aligned.
+
+=item --fasta | -f I<FILE>
+
+Fasta file of protein sequences used as input for FastOrtho clustering.
+
+=item --concat | -c I<FILE>
+
+If specified, concatenated alignment of the extracted single-copy markers will
+be written to this file.
+
+Default: None
+
+=item --help | -h
+
+Short help message
+
+=item --man | -m
+
+Full manual page
+
+=back
+
+=cut
+
+## MAIN ########################################################################
 
 my %cluster_hash;   # Store the protein IDs that correspond to each cluster
 my %clusters_with_paralogs; # Clusters that contain members from same genome (i.e. putative paralogs)
@@ -53,6 +109,8 @@ print STDERR "Clusters with putative paralogs: ".scalar (keys %clusters_with_par
 read_write_Fasta();
 align_Fasta();
 if (defined $concat_file) { concat_alignment(); }
+
+## SUBS ########################################################################
 
 sub read_FastOrtho {        # Read and parse FastOrtho output, given a minimum number of taxa that must occur in the cluster
 open(FASTORTHO, "<", $fastortho_result) or die ("$!\n");
@@ -190,3 +248,23 @@ sub concat_alignment {  # Concatenate all the aligned clusters into a single ali
     my $out_fasta = Bio::AlignIO->new(-file=>">$concat_file",-format=>'fasta');	# define the Multifasta output file
     $out_fasta -> write_aln($concat_aln);	# Write the alignments to file defined above
 }
+
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright 2016-2018, Brandon Seah (kbseah@mpi-bremen.de)
+
+LICENSE
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+=cut

@@ -20,10 +20,8 @@ FastOrtho only finds ortholog clusters and output is in its own idiosyncratic fo
 Extract ortholog clusters that are in single-copy in all genomes and align with Muscle (assumes that `muscle` binary is in path)
 
 ```bash
- perl parse_FastOrtho_results.pl -e fastortho.end -n <num_taxa> -f fastortho.faa -c concatenated alignment.fasta
+ perl fastortho2fasta.pl -e fastortho.end -n <num_taxa> -f fastortho.faa -c concatenated alignment.fasta
 ```
-
-*A newer version of this script is in the `mitonotate` repository as `FastOrtho2fasta.pl`
 
 ### Resampling for core/pan genome statistics
 
